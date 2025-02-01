@@ -1,0 +1,27 @@
+name: golang-lint
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  golangci-lint:
+    name: "golangci-lint"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out base branch latest commit
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+      - name: Check out PR open branch latest commit
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 最新のコミットを取得するためにfetch-depthを設定
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v2  # 最新のアクション
+        with:
+          go_version_file: "./go.mod"
+          golangci_lint_flags: "--config=.golangci.yml"
+          level: info
+          filter_mode: nofilter
+          fail_on_error: true
+          reporter: github-pr-review
