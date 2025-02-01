@@ -16,10 +16,8 @@ jobs:
 
       - name: Set up Go
         uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-
-      - name: Install dependencies  # 依存関係の明示的なインストール
+ 
+      - name: Install dependencies
         run: |
           cd backend
           go mod tidy
@@ -28,4 +26,13 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: latest
+          args: --timeout=5m
           working-directory: backend
+
+      - name: Post Lint Results to PR
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          golangci_lint_flags: "--config=.golangci.yml"
+          level: info
+          reporter: github-pr-review
