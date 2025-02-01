@@ -1,27 +1,31 @@
 name: golang-lint
+
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize]  # PRのオープンと更新時のみ実行
+  workflow_dispatch:
 
 jobs:
   golangci-lint:
     name: "golangci-lint"
     runs-on: ubuntu-latest
+
     steps:
-      - name: Check out base branch latest commit
+      - name: Check out repository
         uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
-      - name: Check out PR open branch latest commit
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # 最新のコミットを取得するためにfetch-depthを設定
+          go-version: '1.21'
+
+      - name: Install dependencies  # 依存関係の明示的なインストール
+        run: |
+          cd backend
+          go mod tidy
+
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v2  # 最新のアクション
+        uses: golangci/golangci-lint-action@v2
         with:
-          go_version_file: "./go.mod"
-          golangci_lint_flags: "--config=.golangci.yml"
-          level: info
-          filter_mode: nofilter
-          fail_on_error: true
-          reporter: github-pr-review
+          version: latest
+          working-directory: backend
