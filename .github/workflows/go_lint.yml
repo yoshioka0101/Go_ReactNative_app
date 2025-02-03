@@ -1,0 +1,38 @@
+name: golang-lint
+
+on:
+  pull_request:
+    types: [opened, synchronize]  # PRのオープンと更新時のみ実行
+  workflow_dispatch:
+
+jobs:
+  golangci-lint:
+    name: "golangci-lint"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+ 
+      - name: Install dependencies
+        run: |
+          cd backend
+          go mod tidy
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: latest
+          args: --timeout=5m
+          working-directory: backend
+
+      - name: Post Lint Results to PR
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          golangci_lint_flags: "--config=.golangci.yml"
+          level: info
+          reporter: github-pr-review
