@@ -25,6 +25,9 @@ func (s *Server) RegisterRoutes() http.Handler {
     r.GET("/", s.HelloWorldHandler)
     r.GET("/health", s.healthHandler)
 
+    // Google OAuth 認証開始のルート追加
+    r.GET("/auth/google", s.googleAuthHandler)
+
     // 認証コールバックのルート追加
     r.GET("/auth/:provider/callback", func(c *gin.Context) {
         s.getAuthCallbackFunction(c)
