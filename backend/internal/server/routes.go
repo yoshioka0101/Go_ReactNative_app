@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"fmt"
+    "log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -68,6 +69,8 @@ func (s *Server) getAuthCallbackFunction(c *gin.Context) {
     // ユーザー情報をログに出力
     fmt.Println(user)
 
-    // 認証成功後にリダイレクト
-    c.Redirect(http.StatusFound, "http://localhost:5173")
+   // 認証後、フロントエンドの `8081` にリダイレクト
+   redirectURL := fmt.Sprintf("http://localhost:8081/dashboard?token=%s", user.AccessToken)
+   log.Println("Redirecting to:", redirectURL)
+   c.Redirect(http.StatusFound, redirectURL)
 }
