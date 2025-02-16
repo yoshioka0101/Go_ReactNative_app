@@ -4,6 +4,7 @@ import (
     "log"
     "os"
 
+    "github.com/markbates/goth"
     "github.com/joho/godotenv"
     "github.com/gorilla/sessions"
     "github.com/markbates/goth/gothic"
@@ -17,25 +18,35 @@ const (
 )
 
 func NewAuth() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error Loading .env file")
-	}
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatal("Error loading .env file")
+    }
 
-	googleClientId := os.Getenv("GOOGLE_CLIENT_ID")
-	googleClientSercret := os.Getenv("GOOGLE_CLIENT_SERCRET")
+    googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+    googleClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+    redirectURL := os.Getenv("GOOGLE_REDIRECT_URL")
 
-	store := sessions.NewCookieStore([]byte(key))
-	store.MaxAge(MaxAge)
+    sessionSecret := os.Getenv("SESSION_SECRET")
+    if sessionSecret == "" {
+        log.Fatal("SESSION_SECRET is not set in .env")
+    }
 
-	store.Options.Path = "/"
-	store.Options.HttpOnly = true
-	store.Options.Secure = IsProd
+    store := sessions.NewCookieStore([]byte(sessionSecret))
+    store.Options = &sessions.Options{
+        Path:     "/",
+        MaxAge:   MaxAge,
+        HttpOnly: true,
+        Secure:   IsProd, // 本番環境ではtrueにする
+    }
+    gothic.Store = store
 
-	gothic.Store =store
-	google.New(googleClientId, googleClientSercret, "http://localhost:3000/auth/google/callback")
-}
-
-func min(){
-
+    goth.UseProviders(
+        google.New(
+            googleClientID,
+            googleClientSecret,
+            redirectURL,
+            "email", "profile",
+        ),
+    )
 }
