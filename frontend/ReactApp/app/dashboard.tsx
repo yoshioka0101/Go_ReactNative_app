@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, Button } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 export default function Dashboard() {
@@ -21,6 +21,7 @@ export default function Dashboard() {
     <View>
       <Text>ログイン成功！</Text>
       <Text>アクセストークン: {token}</Text>
+      <Button title = "ログアウト" onPress={handle}></Button>
     </View>
   );
 }
