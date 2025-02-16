@@ -1,11 +1,15 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/markbates/goth/gothic"
+	"github.com/gin-gonic/gin"
 
 	_ "github.com/joho/godotenv/autoload"
 
@@ -14,16 +18,14 @@ import (
 
 type Server struct {
 	port int
-
-	db database.Service
+	db   database.Service
 }
 
 func NewServer() *http.Server {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	NewServer := &Server{
 		port: port,
-
-		db: database.New(),
+		db:   database.New(),
 	}
 
 	// Declare Server config
@@ -36,4 +38,10 @@ func NewServer() *http.Server {
 	}
 
 	return server
+}
+
+// Google OAuth 認証開始のハンドラー
+func (s *Server) googleAuthHandler(c *gin.Context) {
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), "provider", "google"))
+	gothic.BeginAuthHandler(c.Writer, c.Request)
 }
