@@ -28,6 +28,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 
     // Google OAuth 認証開始のルート追加
     r.GET("/auth/google", s.googleAuthHandler)
+
+    // 
     r.GET("/api/auth/me", s.getUserInfoHandler)
 
     // ログアウトボタンのルート追加
@@ -75,6 +77,7 @@ func (s *Server) getAuthCallbackFunction(c *gin.Context) {
 }
 
 func (s *Server) getUserInfoHandler(c *gin.Context) {
+    // クライアントから送信された auth_token Cookie を取得
     token, err := c.Cookie("auth_token")
     if err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "No auth token found"})
