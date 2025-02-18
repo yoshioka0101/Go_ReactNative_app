@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"net/http"
-	"fmt"
     "log"
 
 	"github.com/gin-contrib/cors"
@@ -16,18 +15,20 @@ func (s *Server) RegisterRoutes() http.Handler {
 
     // CORS設定
     r.Use(cors.New(cors.Config{
-        AllowOrigins:     []string{"http://localhost:5173"},
+        AllowOrigins:     []string{"http://localhost:5173", "http://localhost:8081"},
         AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
         AllowHeaders:     []string{"Accept", "Authorization", "Content-Type"},
         AllowCredentials: true, // クッキーや認証情報を許可
+        ExposeHeaders:    []string{"Set-Cookie"},
     }))
-
+    
     // ルートの登録
     r.GET("/", s.HelloWorldHandler)
     r.GET("/health", s.healthHandler)
 
     // Google OAuth 認証開始のルート追加
     r.GET("/auth/google", s.googleAuthHandler)
+    r.GET("/api/auth/me", s.getUserInfoHandler)
 
     // 認証コールバックのルート追加
     r.GET("/auth/:provider/callback", func(c *gin.Context) {
@@ -48,7 +49,6 @@ func (s *Server) HelloWorldHandler(c *gin.Context) {
 func (s *Server) healthHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, s.db.Health())
 }
-
 func (s *Server) getAuthCallbackFunction(c *gin.Context) {
     // プロバイダー名をURLパラメータから取得
     provider := c.Param("provider")
@@ -59,6 +59,7 @@ func (s *Server) getAuthCallbackFunction(c *gin.Context) {
     // Gothicを使ってユーザー認証を完了
     user, err := gothic.CompleteUserAuth(c.Writer, c.Request.WithContext(ctx))
     if err != nil {
+        log.Println("OAuth authentication failed:", err)
         // エラーメッセージをレスポンスとして返す
         c.JSON(http.StatusInternalServerError, gin.H{
             "error": err.Error(),
@@ -66,11 +67,19 @@ func (s *Server) getAuthCallbackFunction(c *gin.Context) {
         return
     }
 
-    // ユーザー情報をログに出力
-    fmt.Println(user)
+    // アクセストークンを HttpOnly Cookie に保存
+    c.SetCookie("auth_token", user.AccessToken, 3600, "/", "localhost", false, true) 
 
-   // 認証後、フロントエンドの `8081` にリダイレクト
-   redirectURL := fmt.Sprintf("http://localhost:8081/dashboard?token=%s", user.AccessToken)
-   log.Println("Redirecting to:", redirectURL)
-   c.Redirect(http.StatusFound, redirectURL)
+    // `/dashboard` にリダイレクト（トークンは URL に含めない）
+    c.Redirect(http.StatusFound, "http://localhost:8081/dashboard")
+}
+
+func (s *Server) getUserInfoHandler(c *gin.Context) {
+    token, err := c.Cookie("auth_token")
+    if err != nil {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "No auth token found"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"token": token})
 }
