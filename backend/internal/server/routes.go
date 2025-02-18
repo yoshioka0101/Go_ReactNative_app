@@ -30,6 +30,9 @@ func (s *Server) RegisterRoutes() http.Handler {
     r.GET("/auth/google", s.googleAuthHandler)
     r.GET("/api/auth/me", s.getUserInfoHandler)
 
+    // ログアウトボタンのルート追加
+    r.POST("api/auth/logout", s.logoutHandler)
+
     // 認証コールバックのルート追加
     r.GET("/auth/:provider/callback", func(c *gin.Context) {
         s.getAuthCallbackFunction(c)
@@ -60,10 +63,7 @@ func (s *Server) getAuthCallbackFunction(c *gin.Context) {
     user, err := gothic.CompleteUserAuth(c.Writer, c.Request.WithContext(ctx))
     if err != nil {
         log.Println("OAuth authentication failed:", err)
-        // エラーメッセージをレスポンスとして返す
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "error": err.Error(),
-        })
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "OAuth authentication failed", "details": err.Error()})
         return
     }
 
@@ -82,4 +82,13 @@ func (s *Server) getUserInfoHandler(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+func (s *Server) logoutHandler(c *gin.Context) {
+
+    // logoutHandlerメソッドでCookieを削除する
+    c.SetCookie("auth_token", "", -1, "/", "localhost", false, true)
+    // 200返す
+    c.JSON(http.StatusOK, gin.H{"message": "Logout out successfully"})
+
 }
